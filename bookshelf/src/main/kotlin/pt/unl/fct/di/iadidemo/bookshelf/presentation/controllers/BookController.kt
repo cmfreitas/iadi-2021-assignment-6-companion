@@ -68,6 +68,9 @@ class BookController(val books: BookService, val authors: AuthorService) : Books
 
         @CanDeleteBook
         override fun deleteOne(id: Long) {
-            TODO("Not implemented")
+            val book = books
+                .getOne(id)
+                .orElseThrow{ ResponseStatusException(HttpStatus.NOT_FOUND, "Book not found ${id}") }
+            books.deleteOne(book)
         }
 }

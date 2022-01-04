@@ -41,4 +41,6 @@ class BookService(val books: BookRepository) {
         books.save(book)
     }
 
+    fun deleteOne(bookDAO: BookDAO):Unit = books.delete(bookDAO)
+
 }
