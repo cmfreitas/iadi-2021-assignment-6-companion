@@ -6,6 +6,7 @@ import io.jsonwebtoken.SignatureAlgorithm
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.Authentication
+import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter
 import org.springframework.web.filter.GenericFilterBean
@@ -30,6 +31,7 @@ private fun addResponseToken(authentication: Authentication, response: HttpServl
 
     val claims = HashMap<String, Any?>()
     claims["username"] = authentication.name
+    claims["authorities"] = authentication.authorities.toString()
 
     val token = Jwts
             .builder()
@@ -74,9 +76,9 @@ class UserPasswordAuthenticationFilterToJWT (
     }
 }
 
-class UserAuthToken(private var login:String) : Authentication {
+class UserAuthToken(private var login:String, private val authorities:List<GrantedAuthority>) : Authentication {
 
-    override fun getAuthorities() = null
+    override fun getAuthorities() = authorities
 
     override fun setAuthenticated(isAuthenticated: Boolean) {}
 
@@ -113,7 +115,11 @@ class JWTAuthenticationFilter: GenericFilterBean() {
 
             else {
 
-                val authentication = UserAuthToken(claims["username"] as String)
+                val authorityArray = claims["authorities"] as String
+                val authority = authorityArray.subSequence(1, authorityArray.length-1)
+
+                val authentication = UserAuthToken(claims["username"] as String,
+                    listOf(GrantedAuthority { authority.toString() }))
                 // Can go to the database to get the actual user information (e.g. authorities)
 
                 SecurityContextHolder.getContext().authentication = authentication
@@ -157,7 +163,7 @@ class UserPasswordSignUpFilterToJWT (
                 .addUser(user)
                 .orElse( null )
                 .let {
-                    val auth = UserAuthToken(user.username)
+                    val auth = UserAuthToken(user.username, listOf(GrantedAuthority { "USER" }))
                     SecurityContextHolder.getContext().authentication = auth
                     auth
                 }
